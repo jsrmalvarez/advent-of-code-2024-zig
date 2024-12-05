@@ -42,6 +42,13 @@ pub fn Matrix(comptime T: type) type {
 
 pub const Direction = enum { E, W, N, S, NE, SE, SW, NW };
 
+pub fn IteratorResult(comptime T: type) type {
+    return struct {
+        value: T,
+        is_at_matrix_edge: bool,
+    };
+}
+
 pub fn MatrixIterator(comptime T: type, comptime dir: Direction) type {
     return struct {
         const Self = @This();
@@ -59,7 +66,7 @@ pub fn MatrixIterator(comptime T: type, comptime dir: Direction) type {
             };
         }
 
-        pub fn next(self: *Self) ?T {
+        pub fn next(self: *Self) ?IteratorResult(T) {
             switch (dir) {
                 Direction.E => return self.nextE(),
                 Direction.W => return self.nextW(),
@@ -72,90 +79,95 @@ pub fn MatrixIterator(comptime T: type, comptime dir: Direction) type {
             }
         }
 
-        fn nextE(self: *Self) ?T {
+        fn nextE(self: *Self) ?IteratorResult(T) {
             if (self.n < self.matrix.num_rows) {
                 if (self.k < self.matrix.num_cols) {
                     const item = self.matrix.at(self.n, self.k);
-
+                    var is_at_matrix_edge = false;
                     self.k += 1;
 
                     if (self.k == self.matrix.num_cols) {
                         self.k = 0;
                         self.n += 1;
+                        is_at_matrix_edge = true;
                     }
 
-                    return item;
+                    return IteratorResult(T){ .value = item, .is_at_matrix_edge = is_at_matrix_edge };
                 }
             }
 
             return null;
         }
 
-        fn nextW(self: *Self) ?T {
+        fn nextW(self: *Self) ?IteratorResult(T) {
             if (self.n < self.matrix.num_rows) {
                 if (self.k < self.matrix.num_cols) {
                     const item = self.matrix.at(self.n, self.matrix.num_cols - 1 - self.k);
-
+                    var is_at_matrix_edge = false;
                     self.k += 1;
 
                     if (self.k == self.matrix.num_cols) {
                         self.k = 0;
                         self.n += 1;
+                        is_at_matrix_edge = true;
                     }
 
-                    return item;
+                    return IteratorResult(T){ .value = item, .is_at_matrix_edge = is_at_matrix_edge };
                 }
             }
 
             return null;
         }
 
-        fn nextS(self: *Self) ?T {
+        fn nextS(self: *Self) ?IteratorResult(T) {
             if (self.n < self.matrix.num_rows) {
                 if (self.k < self.matrix.num_cols) {
                     const item = self.matrix.at(self.n, self.k);
-
+                    var is_at_matrix_edge = false;
                     self.n += 1;
 
                     if (self.n == self.matrix.num_rows) {
                         self.n = 0;
                         self.k += 1;
+                        is_at_matrix_edge = true;
                     }
 
-                    return item;
+                    return IteratorResult(T){ .value = item, .is_at_matrix_edge = is_at_matrix_edge };
                 }
             }
 
             return null;
         }
 
-        fn nextN(self: *Self) ?T {
+        fn nextN(self: *Self) ?IteratorResult(T) {
             if (self.n < self.matrix.num_rows) {
                 if (self.k < self.matrix.num_cols) {
                     const item = self.matrix.at(self.matrix.num_rows - 1 - self.n, self.k);
-
+                    var is_at_matrix_edge = false;
                     self.n += 1;
 
                     if (self.n == self.matrix.num_rows) {
                         self.n = 0;
                         self.k += 1;
+                        is_at_matrix_edge = true;
                     }
 
-                    return item;
+                    return IteratorResult(T){ .value = item, .is_at_matrix_edge = is_at_matrix_edge };
                 }
             }
 
             return null;
         }
 
-        fn nextNE(self: *Self) ?T {
+        fn nextNE(self: *Self) ?IteratorResult(T) {
             if (self.d <= self.matrix.num_rows + self.matrix.num_cols - 1) {
                 if (self.n < self.matrix.num_rows) {
                     if (self.k < self.matrix.num_cols) {
                         const item = self.matrix.at(self.n, self.k);
-
+                        var is_at_matrix_edge = false;
                         if (self.n == 0) {
                             self.d += 1;
+                            is_at_matrix_edge = true;
                             self.n = self.d;
                             self.k = 0;
                         } else {
@@ -166,10 +178,11 @@ pub fn MatrixIterator(comptime T: type, comptime dir: Direction) type {
                                 self.k = self.d - (self.matrix.num_cols - 1);
                                 self.n = self.matrix.num_rows - 1;
                                 self.d += 1;
+                                is_at_matrix_edge = true;
                             }
                         }
 
-                        return item;
+                        return IteratorResult(T){ .value = item, .is_at_matrix_edge = is_at_matrix_edge };
                     }
                 }
             }
@@ -177,16 +190,17 @@ pub fn MatrixIterator(comptime T: type, comptime dir: Direction) type {
             return null;
         }
 
-        fn nextNW(self: *Self) ?T {
+        fn nextNW(self: *Self) ?IteratorResult(T) {
             if (self.d <= self.matrix.num_rows + self.matrix.num_cols - 1) {
                 if (self.n < self.matrix.num_rows) {
                     if (self.k < self.matrix.num_cols) {
                         const item = self.matrix.at(self.n, self.matrix.num_cols - 1 - self.k);
-
+                        var is_at_matrix_edge = false;
                         if (self.n == 0) {
                             self.d += 1;
                             self.n = self.d;
                             self.k = 0;
+                            is_at_matrix_edge = true;
                         } else {
                             self.n -= 1;
                             if (self.k < self.matrix.num_cols - 1) {
@@ -195,10 +209,11 @@ pub fn MatrixIterator(comptime T: type, comptime dir: Direction) type {
                                 self.k = self.d - (self.matrix.num_cols - 1);
                                 self.n = self.matrix.num_rows - 1;
                                 self.d += 1;
+                                is_at_matrix_edge = true;
                             }
                         }
 
-                        return item;
+                        return IteratorResult(T){ .value = item, .is_at_matrix_edge = is_at_matrix_edge };
                     }
                 }
             }
@@ -206,14 +221,15 @@ pub fn MatrixIterator(comptime T: type, comptime dir: Direction) type {
             return null;
         }
 
-        fn nextSE(self: *Self) ?T {
+        fn nextSE(self: *Self) ?IteratorResult(T) {
             if (self.d <= self.matrix.num_rows + self.matrix.num_cols - 1) {
                 if (self.n < self.matrix.num_rows) {
                     if (self.k < self.matrix.num_cols) {
                         const item = self.matrix.at(self.matrix.num_rows - 1 - self.n, self.k);
-
+                        var is_at_matrix_edge = false;
                         if (self.n == 0) {
                             self.d += 1;
+                            is_at_matrix_edge = true;
                             self.n = self.d;
                             self.k = 0;
                         } else {
@@ -224,10 +240,11 @@ pub fn MatrixIterator(comptime T: type, comptime dir: Direction) type {
                                 self.k = self.d - (self.matrix.num_cols - 1);
                                 self.n = self.matrix.num_rows - 1;
                                 self.d += 1;
+                                is_at_matrix_edge = true;
                             }
                         }
 
-                        return item;
+                        return IteratorResult(T){ .value = item, .is_at_matrix_edge = is_at_matrix_edge };
                     }
                 }
             }
@@ -235,14 +252,15 @@ pub fn MatrixIterator(comptime T: type, comptime dir: Direction) type {
             return null;
         }
 
-        fn nextSW(self: *Self) ?T {
+        fn nextSW(self: *Self) ?IteratorResult(T) {
             if (self.d <= self.matrix.num_rows + self.matrix.num_cols - 1) {
                 if (self.n < self.matrix.num_rows) {
                     if (self.k < self.matrix.num_cols) {
                         const item = self.matrix.at(self.matrix.num_rows - 1 - self.n, self.matrix.num_cols - 1 - self.k);
-
+                        var is_at_matrix_edge = false;
                         if (self.n == 0) {
                             self.d += 1;
+                            is_at_matrix_edge = true;
                             self.n = self.d;
                             self.k = 0;
                         } else {
@@ -253,10 +271,11 @@ pub fn MatrixIterator(comptime T: type, comptime dir: Direction) type {
                                 self.k = self.d - (self.matrix.num_cols - 1);
                                 self.n = self.matrix.num_rows - 1;
                                 self.d += 1;
+                                is_at_matrix_edge = true;
                             }
                         }
 
-                        return item;
+                        return IteratorResult(T){ .value = item, .is_at_matrix_edge = is_at_matrix_edge };
                     }
                 }
             }
@@ -271,18 +290,18 @@ test "test E" {
     const a: Matrix(u8) = try Matrix(u8).init(std.heap.page_allocator, 4, 3, &data);
 
     var iter = MatrixIterator(u8, Direction.E).init(&a);
-    try std.testing.expectEqual(iter.next(), 'a');
-    try std.testing.expectEqual(iter.next(), 'b');
-    try std.testing.expectEqual(iter.next(), 'c');
-    try std.testing.expectEqual(iter.next(), 'd');
-    try std.testing.expectEqual(iter.next(), 'e');
-    try std.testing.expectEqual(iter.next(), 'f');
-    try std.testing.expectEqual(iter.next(), 'g');
-    try std.testing.expectEqual(iter.next(), 'h');
-    try std.testing.expectEqual(iter.next(), 'i');
-    try std.testing.expectEqual(iter.next(), 'j');
-    try std.testing.expectEqual(iter.next(), 'k');
-    try std.testing.expectEqual(iter.next(), 'l');
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'a', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'b', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'c', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'd', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'e', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'f', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'g', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'h', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'i', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'j', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'k', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'l', .is_at_matrix_edge = true });
     try std.testing.expectEqual(iter.next(), null);
 }
 
@@ -291,18 +310,18 @@ test "test W" {
     const a: Matrix(u8) = try Matrix(u8).init(std.heap.page_allocator, 4, 3, &data);
 
     var iter = MatrixIterator(u8, Direction.W).init(&a);
-    try std.testing.expectEqual(iter.next(), 'c');
-    try std.testing.expectEqual(iter.next(), 'b');
-    try std.testing.expectEqual(iter.next(), 'a');
-    try std.testing.expectEqual(iter.next(), 'f');
-    try std.testing.expectEqual(iter.next(), 'e');
-    try std.testing.expectEqual(iter.next(), 'd');
-    try std.testing.expectEqual(iter.next(), 'i');
-    try std.testing.expectEqual(iter.next(), 'h');
-    try std.testing.expectEqual(iter.next(), 'g');
-    try std.testing.expectEqual(iter.next(), 'l');
-    try std.testing.expectEqual(iter.next(), 'k');
-    try std.testing.expectEqual(iter.next(), 'j');
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'c', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'b', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'a', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'f', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'e', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'd', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'i', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'h', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'g', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'l', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'k', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'j', .is_at_matrix_edge = true });
     try std.testing.expectEqual(iter.next(), null);
 }
 
@@ -311,18 +330,18 @@ test "test S" {
     const a: Matrix(u8) = try Matrix(u8).init(std.heap.page_allocator, 4, 3, &data);
 
     var iter = MatrixIterator(u8, Direction.S).init(&a);
-    try std.testing.expectEqual(iter.next(), 'a');
-    try std.testing.expectEqual(iter.next(), 'd');
-    try std.testing.expectEqual(iter.next(), 'g');
-    try std.testing.expectEqual(iter.next(), 'j');
-    try std.testing.expectEqual(iter.next(), 'b');
-    try std.testing.expectEqual(iter.next(), 'e');
-    try std.testing.expectEqual(iter.next(), 'h');
-    try std.testing.expectEqual(iter.next(), 'k');
-    try std.testing.expectEqual(iter.next(), 'c');
-    try std.testing.expectEqual(iter.next(), 'f');
-    try std.testing.expectEqual(iter.next(), 'i');
-    try std.testing.expectEqual(iter.next(), 'l');
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'a', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'd', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'g', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'j', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'b', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'e', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'h', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'k', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'c', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'f', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'i', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'l', .is_at_matrix_edge = true });
     try std.testing.expectEqual(iter.next(), null);
 }
 
@@ -331,18 +350,18 @@ test "test N" {
     const a: Matrix(u8) = try Matrix(u8).init(std.heap.page_allocator, 4, 3, &data);
 
     var iter = MatrixIterator(u8, Direction.N).init(&a);
-    try std.testing.expectEqual(iter.next(), 'j');
-    try std.testing.expectEqual(iter.next(), 'g');
-    try std.testing.expectEqual(iter.next(), 'd');
-    try std.testing.expectEqual(iter.next(), 'a');
-    try std.testing.expectEqual(iter.next(), 'k');
-    try std.testing.expectEqual(iter.next(), 'h');
-    try std.testing.expectEqual(iter.next(), 'e');
-    try std.testing.expectEqual(iter.next(), 'b');
-    try std.testing.expectEqual(iter.next(), 'l');
-    try std.testing.expectEqual(iter.next(), 'i');
-    try std.testing.expectEqual(iter.next(), 'f');
-    try std.testing.expectEqual(iter.next(), 'c');
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'j', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'g', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'd', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'a', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'k', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'h', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'e', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'b', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'l', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'i', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'f', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'c', .is_at_matrix_edge = true });
     try std.testing.expectEqual(iter.next(), null);
 }
 
@@ -351,18 +370,18 @@ test "test NE" {
     const a: Matrix(u8) = try Matrix(u8).init(std.heap.page_allocator, 4, 3, &data);
 
     var iter = MatrixIterator(u8, Direction.NE).init(&a);
-    try std.testing.expectEqual(iter.next(), 'a');
-    try std.testing.expectEqual(iter.next(), 'd');
-    try std.testing.expectEqual(iter.next(), 'b');
-    try std.testing.expectEqual(iter.next(), 'g');
-    try std.testing.expectEqual(iter.next(), 'e');
-    try std.testing.expectEqual(iter.next(), 'c');
-    try std.testing.expectEqual(iter.next(), 'j');
-    try std.testing.expectEqual(iter.next(), 'h');
-    try std.testing.expectEqual(iter.next(), 'f');
-    try std.testing.expectEqual(iter.next(), 'k');
-    try std.testing.expectEqual(iter.next(), 'i');
-    try std.testing.expectEqual(iter.next(), 'l');
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'a', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'd', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'b', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'g', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'e', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'c', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'j', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'h', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'f', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'k', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'i', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'l', .is_at_matrix_edge = true });
     try std.testing.expectEqual(iter.next(), null);
 }
 
@@ -371,18 +390,18 @@ test "test NW" {
     const a: Matrix(u8) = try Matrix(u8).init(std.heap.page_allocator, 4, 3, &data);
 
     var iter = MatrixIterator(u8, Direction.NW).init(&a);
-    try std.testing.expectEqual(iter.next(), 'c');
-    try std.testing.expectEqual(iter.next(), 'f');
-    try std.testing.expectEqual(iter.next(), 'b');
-    try std.testing.expectEqual(iter.next(), 'i');
-    try std.testing.expectEqual(iter.next(), 'e');
-    try std.testing.expectEqual(iter.next(), 'a');
-    try std.testing.expectEqual(iter.next(), 'l');
-    try std.testing.expectEqual(iter.next(), 'h');
-    try std.testing.expectEqual(iter.next(), 'd');
-    try std.testing.expectEqual(iter.next(), 'k');
-    try std.testing.expectEqual(iter.next(), 'g');
-    try std.testing.expectEqual(iter.next(), 'j');
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'c', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'f', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'b', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'i', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'e', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'a', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'l', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'h', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'd', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'k', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'g', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'j', .is_at_matrix_edge = true });
     try std.testing.expectEqual(iter.next(), null);
 }
 
@@ -391,18 +410,18 @@ test "test SE" {
     const a: Matrix(u8) = try Matrix(u8).init(std.heap.page_allocator, 4, 3, &data);
 
     var iter = MatrixIterator(u8, Direction.SE).init(&a);
-    try std.testing.expectEqual(iter.next(), 'j');
-    try std.testing.expectEqual(iter.next(), 'g');
-    try std.testing.expectEqual(iter.next(), 'k');
-    try std.testing.expectEqual(iter.next(), 'd');
-    try std.testing.expectEqual(iter.next(), 'h');
-    try std.testing.expectEqual(iter.next(), 'l');
-    try std.testing.expectEqual(iter.next(), 'a');
-    try std.testing.expectEqual(iter.next(), 'e');
-    try std.testing.expectEqual(iter.next(), 'i');
-    try std.testing.expectEqual(iter.next(), 'b');
-    try std.testing.expectEqual(iter.next(), 'f');
-    try std.testing.expectEqual(iter.next(), 'c');
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'j', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'g', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'k', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'd', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'h', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'l', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'a', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'e', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'i', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'b', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'f', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'c', .is_at_matrix_edge = true });
     try std.testing.expectEqual(iter.next(), null);
 }
 
@@ -411,17 +430,17 @@ test "test SW" {
     const a: Matrix(u8) = try Matrix(u8).init(std.heap.page_allocator, 4, 3, &data);
 
     var iter = MatrixIterator(u8, Direction.SW).init(&a);
-    try std.testing.expectEqual(iter.next(), 'l');
-    try std.testing.expectEqual(iter.next(), 'i');
-    try std.testing.expectEqual(iter.next(), 'k');
-    try std.testing.expectEqual(iter.next(), 'f');
-    try std.testing.expectEqual(iter.next(), 'h');
-    try std.testing.expectEqual(iter.next(), 'j');
-    try std.testing.expectEqual(iter.next(), 'c');
-    try std.testing.expectEqual(iter.next(), 'e');
-    try std.testing.expectEqual(iter.next(), 'g');
-    try std.testing.expectEqual(iter.next(), 'b');
-    try std.testing.expectEqual(iter.next(), 'd');
-    try std.testing.expectEqual(iter.next(), 'a');
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'l', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'i', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'k', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'f', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'h', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'j', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'c', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'e', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'g', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'b', .is_at_matrix_edge = false });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'd', .is_at_matrix_edge = true });
+    try std.testing.expectEqual(iter.next(), IteratorResult(u8){ .value = 'a', .is_at_matrix_edge = true });
     try std.testing.expectEqual(iter.next(), null);
 }
