@@ -59,12 +59,14 @@ pub fn MatrixIterator(comptime T: type, comptime dir: Direction) type {
         const Self = @This();
         n: usize,
         k: usize,
+        d: usize,
         matrix: *const Matrix(T),
 
         pub fn init(matrix: *const Matrix(T)) Self {
             return Self{
                 .n = 0,
                 .k = 0,
+                .d = 0,
                 .matrix = matrix,
             };
         }
@@ -75,9 +77,10 @@ pub fn MatrixIterator(comptime T: type, comptime dir: Direction) type {
                 Direction.W => return self.nextW(),
                 Direction.S => return self.nextS(),
                 Direction.N => return self.nextN(),
-                Direction.N => return self.nextNE(),
-                else => unreachable,
-                //, W, N, S, NE, SE, SW, NW
+                Direction.NE => return self.nextNE(),
+                Direction.NW => return self.nextNW(),
+                Direction.SE => return self.nextSE(),
+                Direction.SW => return self.nextSW(),
             }
         }
 
@@ -158,22 +161,115 @@ pub fn MatrixIterator(comptime T: type, comptime dir: Direction) type {
         }
 
         fn nextNE(self: *Self) ?T {
-            if (self.n < self.matrix.num_rows) {
-                if (self.k < self.matrix.num_cols) {
-                    const item = self.matrix.at(self.matrix.num_rows - 1 - self.n, self.k);
+            if (self.d <= self.matrix.num_rows + self.matrix.num_cols - 1) {
+                if (self.n < self.matrix.num_rows) {
+                    if (self.k < self.matrix.num_cols) {
+                        const item = self.matrix.at(self.n, self.k);
 
-                    self.k += 1;
-                    self.n += 1;
+                        if (self.n == 0) {
+                            self.d += 1;
+                            self.n = self.d;
+                            self.k = 0;
+                        } else {
+                            self.n -= 1;
+                            if (self.k < self.matrix.num_cols - 1) {
+                                self.k += 1;
+                            } else {
+                                self.k = self.d - (self.matrix.num_cols - 1);
+                                self.n = self.matrix.num_rows - 1;
+                                self.d += 1;
+                            }
+                        }
 
-                    if (self.k == self.matrix.num_cols) {
-                        self.k = 0;
+                        return item;
                     }
+                }
+            }
 
-                    if (self.n == self.matrix.num_rows) {
-                        self.n = 0;
+            return null;
+        }
+
+        fn nextNW(self: *Self) ?T {
+            if (self.d <= self.matrix.num_rows + self.matrix.num_cols - 1) {
+                if (self.n < self.matrix.num_rows) {
+                    if (self.k < self.matrix.num_cols) {
+                        const item = self.matrix.at(self.n, self.matrix.num_cols - 1 - self.k);
+
+                        if (self.n == 0) {
+                            self.d += 1;
+                            self.n = self.d;
+                            self.k = 0;
+                        } else {
+                            self.n -= 1;
+                            if (self.k < self.matrix.num_cols - 1) {
+                                self.k += 1;
+                            } else {
+                                self.k = self.d - (self.matrix.num_cols - 1);
+                                self.n = self.matrix.num_rows - 1;
+                                self.d += 1;
+                            }
+                        }
+
+                        return item;
                     }
+                }
+            }
 
-                    return item;
+            return null;
+        }
+
+        fn nextSE(self: *Self) ?T {
+            if (self.d <= self.matrix.num_rows + self.matrix.num_cols - 1) {
+                if (self.n < self.matrix.num_rows) {
+                    if (self.k < self.matrix.num_cols) {
+                        const item = self.matrix.at(self.matrix.num_rows - 1 - self.n, self.k);
+
+                        if (self.n == 0) {
+                            self.d += 1;
+                            self.n = self.d;
+                            self.k = 0;
+                        } else {
+                            self.n -= 1;
+                            if (self.k < self.matrix.num_cols - 1) {
+                                self.k += 1;
+                            } else {
+                                self.k = self.d - (self.matrix.num_cols - 1);
+                                self.n = self.matrix.num_rows - 1;
+                                self.d += 1;
+                            }
+                        }
+
+                        return item;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        fn nextSW(self: *Self) ?T {
+            if (self.d <= self.matrix.num_rows + self.matrix.num_cols - 1) {
+                if (self.n < self.matrix.num_rows) {
+                    if (self.k < self.matrix.num_cols) {
+                        const item = self.matrix.at(self.matrix.num_rows - 1 - self.n, self.matrix.num_cols - 1 - self.k);
+
+                        if (self.n == 0) {
+                            self.d += 1;
+                            self.n = self.d;
+                            self.k = 0;
+                        } else {
+                            self.n -= 1;
+                            if (self.k < self.matrix.num_cols - 1) {
+                                self.k += 1;
+                            } else {
+                                self.k = self.d - (self.matrix.num_cols - 1);
+                                self.n = self.matrix.num_rows - 1;
+                                self.d += 1;
+                            }
+                        }
+
+                        return item;
+                    }
                 }
             }
 
@@ -186,51 +282,162 @@ pub fn getResultDay04_1() u64 {
     return 42;
 }
 
-test "test" {
-    const data = [_]u8{ 'a', 'b', 'c', 'd' };
-    const a: Matrix(u8) = try Matrix(u8).init(std.heap.page_allocator, 2, 2, &data);
-    {
-        var iter = MatrixIterator(u8, Direction.E).init(&a);
-        try std.testing.expectEqual(iter.next(), 'a');
-        try std.testing.expectEqual(iter.next(), 'b');
-        try std.testing.expectEqual(iter.next(), 'c');
-        try std.testing.expectEqual(iter.next(), 'd');
-        try std.testing.expectEqual(iter.next(), null);
-    }
+test "test E" {
+    const data = [_]u8{ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l' };
+    const a: Matrix(u8) = try Matrix(u8).init(std.heap.page_allocator, 4, 3, &data);
 
-    {
-        var iter = MatrixIterator(u8, Direction.W).init(&a);
-        try std.testing.expectEqual(iter.next(), 'b');
-        try std.testing.expectEqual(iter.next(), 'a');
-        try std.testing.expectEqual(iter.next(), 'd');
-        try std.testing.expectEqual(iter.next(), 'c');
-        try std.testing.expectEqual(iter.next(), null);
-    }
+    var iter = MatrixIterator(u8, Direction.E).init(&a);
+    try std.testing.expectEqual(iter.next(), 'a');
+    try std.testing.expectEqual(iter.next(), 'b');
+    try std.testing.expectEqual(iter.next(), 'c');
+    try std.testing.expectEqual(iter.next(), 'd');
+    try std.testing.expectEqual(iter.next(), 'e');
+    try std.testing.expectEqual(iter.next(), 'f');
+    try std.testing.expectEqual(iter.next(), 'g');
+    try std.testing.expectEqual(iter.next(), 'h');
+    try std.testing.expectEqual(iter.next(), 'i');
+    try std.testing.expectEqual(iter.next(), 'j');
+    try std.testing.expectEqual(iter.next(), 'k');
+    try std.testing.expectEqual(iter.next(), 'l');
+    try std.testing.expectEqual(iter.next(), null);
+}
 
-    {
-        var iter = MatrixIterator(u8, Direction.S).init(&a);
-        try std.testing.expectEqual(iter.next(), 'a');
-        try std.testing.expectEqual(iter.next(), 'c');
-        try std.testing.expectEqual(iter.next(), 'b');
-        try std.testing.expectEqual(iter.next(), 'd');
-        try std.testing.expectEqual(iter.next(), null);
-    }
+test "test W" {
+    const data = [_]u8{ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l' };
+    const a: Matrix(u8) = try Matrix(u8).init(std.heap.page_allocator, 4, 3, &data);
 
-    {
-        var iter = MatrixIterator(u8, Direction.N).init(&a);
-        try std.testing.expectEqual(iter.next(), 'c');
-        try std.testing.expectEqual(iter.next(), 'a');
-        try std.testing.expectEqual(iter.next(), 'd');
-        try std.testing.expectEqual(iter.next(), 'b');
-        try std.testing.expectEqual(iter.next(), null);
-    }
+    var iter = MatrixIterator(u8, Direction.W).init(&a);
+    try std.testing.expectEqual(iter.next(), 'c');
+    try std.testing.expectEqual(iter.next(), 'b');
+    try std.testing.expectEqual(iter.next(), 'a');
+    try std.testing.expectEqual(iter.next(), 'f');
+    try std.testing.expectEqual(iter.next(), 'e');
+    try std.testing.expectEqual(iter.next(), 'd');
+    try std.testing.expectEqual(iter.next(), 'i');
+    try std.testing.expectEqual(iter.next(), 'h');
+    try std.testing.expectEqual(iter.next(), 'g');
+    try std.testing.expectEqual(iter.next(), 'l');
+    try std.testing.expectEqual(iter.next(), 'k');
+    try std.testing.expectEqual(iter.next(), 'j');
+    try std.testing.expectEqual(iter.next(), null);
+}
 
-    {
-        var iter = MatrixIterator(u8, Direction.NE).init(&a);
-        try std.testing.expectEqual(iter.next(), 'a');
-        try std.testing.expectEqual(iter.next(), 'c');
-        try std.testing.expectEqual(iter.next(), 'b');
-        try std.testing.expectEqual(iter.next(), 'd');
-        try std.testing.expectEqual(iter.next(), null);
-    }
+test "test S" {
+    const data = [_]u8{ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l' };
+    const a: Matrix(u8) = try Matrix(u8).init(std.heap.page_allocator, 4, 3, &data);
+
+    var iter = MatrixIterator(u8, Direction.S).init(&a);
+    try std.testing.expectEqual(iter.next(), 'a');
+    try std.testing.expectEqual(iter.next(), 'd');
+    try std.testing.expectEqual(iter.next(), 'g');
+    try std.testing.expectEqual(iter.next(), 'j');
+    try std.testing.expectEqual(iter.next(), 'b');
+    try std.testing.expectEqual(iter.next(), 'e');
+    try std.testing.expectEqual(iter.next(), 'h');
+    try std.testing.expectEqual(iter.next(), 'k');
+    try std.testing.expectEqual(iter.next(), 'c');
+    try std.testing.expectEqual(iter.next(), 'f');
+    try std.testing.expectEqual(iter.next(), 'i');
+    try std.testing.expectEqual(iter.next(), 'l');
+    try std.testing.expectEqual(iter.next(), null);
+}
+
+test "test N" {
+    const data = [_]u8{ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l' };
+    const a: Matrix(u8) = try Matrix(u8).init(std.heap.page_allocator, 4, 3, &data);
+
+    var iter = MatrixIterator(u8, Direction.N).init(&a);
+    try std.testing.expectEqual(iter.next(), 'j');
+    try std.testing.expectEqual(iter.next(), 'g');
+    try std.testing.expectEqual(iter.next(), 'd');
+    try std.testing.expectEqual(iter.next(), 'a');
+    try std.testing.expectEqual(iter.next(), 'k');
+    try std.testing.expectEqual(iter.next(), 'h');
+    try std.testing.expectEqual(iter.next(), 'e');
+    try std.testing.expectEqual(iter.next(), 'b');
+    try std.testing.expectEqual(iter.next(), 'l');
+    try std.testing.expectEqual(iter.next(), 'i');
+    try std.testing.expectEqual(iter.next(), 'f');
+    try std.testing.expectEqual(iter.next(), 'c');
+    try std.testing.expectEqual(iter.next(), null);
+}
+
+test "test NE" {
+    const data = [_]u8{ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l' };
+    const a: Matrix(u8) = try Matrix(u8).init(std.heap.page_allocator, 4, 3, &data);
+
+    var iter = MatrixIterator(u8, Direction.NE).init(&a);
+    try std.testing.expectEqual(iter.next(), 'a');
+    try std.testing.expectEqual(iter.next(), 'd');
+    try std.testing.expectEqual(iter.next(), 'b');
+    try std.testing.expectEqual(iter.next(), 'g');
+    try std.testing.expectEqual(iter.next(), 'e');
+    try std.testing.expectEqual(iter.next(), 'c');
+    try std.testing.expectEqual(iter.next(), 'j');
+    try std.testing.expectEqual(iter.next(), 'h');
+    try std.testing.expectEqual(iter.next(), 'f');
+    try std.testing.expectEqual(iter.next(), 'k');
+    try std.testing.expectEqual(iter.next(), 'i');
+    try std.testing.expectEqual(iter.next(), 'l');
+    try std.testing.expectEqual(iter.next(), null);
+}
+
+test "test NW" {
+    const data = [_]u8{ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l' };
+    const a: Matrix(u8) = try Matrix(u8).init(std.heap.page_allocator, 4, 3, &data);
+
+    var iter = MatrixIterator(u8, Direction.NW).init(&a);
+    try std.testing.expectEqual(iter.next(), 'c');
+    try std.testing.expectEqual(iter.next(), 'f');
+    try std.testing.expectEqual(iter.next(), 'b');
+    try std.testing.expectEqual(iter.next(), 'i');
+    try std.testing.expectEqual(iter.next(), 'e');
+    try std.testing.expectEqual(iter.next(), 'a');
+    try std.testing.expectEqual(iter.next(), 'l');
+    try std.testing.expectEqual(iter.next(), 'h');
+    try std.testing.expectEqual(iter.next(), 'd');
+    try std.testing.expectEqual(iter.next(), 'k');
+    try std.testing.expectEqual(iter.next(), 'g');
+    try std.testing.expectEqual(iter.next(), 'j');
+    try std.testing.expectEqual(iter.next(), null);
+}
+
+test "test SE" {
+    const data = [_]u8{ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l' };
+    const a: Matrix(u8) = try Matrix(u8).init(std.heap.page_allocator, 4, 3, &data);
+
+    var iter = MatrixIterator(u8, Direction.SE).init(&a);
+    try std.testing.expectEqual(iter.next(), 'j');
+    try std.testing.expectEqual(iter.next(), 'g');
+    try std.testing.expectEqual(iter.next(), 'k');
+    try std.testing.expectEqual(iter.next(), 'd');
+    try std.testing.expectEqual(iter.next(), 'h');
+    try std.testing.expectEqual(iter.next(), 'l');
+    try std.testing.expectEqual(iter.next(), 'a');
+    try std.testing.expectEqual(iter.next(), 'e');
+    try std.testing.expectEqual(iter.next(), 'i');
+    try std.testing.expectEqual(iter.next(), 'b');
+    try std.testing.expectEqual(iter.next(), 'f');
+    try std.testing.expectEqual(iter.next(), 'c');
+    try std.testing.expectEqual(iter.next(), null);
+}
+
+test "test SW" {
+    const data = [_]u8{ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l' };
+    const a: Matrix(u8) = try Matrix(u8).init(std.heap.page_allocator, 4, 3, &data);
+
+    var iter = MatrixIterator(u8, Direction.SW).init(&a);
+    try std.testing.expectEqual(iter.next(), 'l');
+    try std.testing.expectEqual(iter.next(), 'i');
+    try std.testing.expectEqual(iter.next(), 'k');
+    try std.testing.expectEqual(iter.next(), 'f');
+    try std.testing.expectEqual(iter.next(), 'h');
+    try std.testing.expectEqual(iter.next(), 'j');
+    try std.testing.expectEqual(iter.next(), 'c');
+    try std.testing.expectEqual(iter.next(), 'e');
+    try std.testing.expectEqual(iter.next(), 'g');
+    try std.testing.expectEqual(iter.next(), 'b');
+    try std.testing.expectEqual(iter.next(), 'd');
+    try std.testing.expectEqual(iter.next(), 'a');
+    try std.testing.expectEqual(iter.next(), null);
 }
