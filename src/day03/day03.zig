@@ -1,5 +1,4 @@
 const std = @import("std");
-const utils = @import("../utils.zig");
 
 const input_file_path = "src/day03/input_day_03.txt";
 
