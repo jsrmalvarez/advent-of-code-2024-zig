@@ -24,28 +24,28 @@ const IncompleteEquation = struct {
         try self.operands.append(operand);
     }
 
-    const Operation = enum { sum, product };
+    const OperationSumProd = enum { sum, product };
 
     pub fn checkPossibleSolutionSumProd(self: IncompleteEquation) bool {
         const first = self.operands.items[0];
         const second = self.operands.items[1];
         const tail = self.operands.items[2..];
-        const sum_check = checkPossibleSolutionSumProdRec(self.result, first, second, Operation.sum, tail);
-        const prod_check = checkPossibleSolutionSumProdRec(self.result, first, second, Operation.product, tail);
+        const sum_check = checkPossibleSolutionSumProdRec(self.result, first, second, OperationSumProd.sum, tail);
+        const prod_check = checkPossibleSolutionSumProdRec(self.result, first, second, OperationSumProd.product, tail);
         return sum_check or prod_check;
     }
 
-    fn checkPossibleSolutionSumProdRec(equationResult: u64, first: u64, second: u64, operation: Operation, tail: []u64) bool {
+    fn checkPossibleSolutionSumProdRec(equationResult: u64, first: u64, second: u64, operation: OperationSumProd, tail: []u64) bool {
         const result = switch (operation) {
-            Operation.sum => first + second,
-            Operation.product => first * second,
+            OperationSumProd.sum => first + second,
+            OperationSumProd.product => first * second,
         };
 
         if (tail.len == 0) {
             return equationResult == result;
         } else {
-            const sum_check = checkPossibleSolutionSumProdRec(equationResult, result, tail[0], Operation.sum, tail[1..]);
-            const prod_check = checkPossibleSolutionSumProdRec(equationResult, result, tail[0], Operation.product, tail[1..]);
+            const sum_check = checkPossibleSolutionSumProdRec(equationResult, result, tail[0], OperationSumProd.sum, tail[1..]);
+            const prod_check = checkPossibleSolutionSumProdRec(equationResult, result, tail[0], OperationSumProd.product, tail[1..]);
             return sum_check or prod_check;
         }
     }
@@ -174,6 +174,32 @@ pub fn getResultDay07_1(allocator: std.mem.Allocator) !usize {
             var incomplete_equation = try parseLine(allocator, line);
             defer incomplete_equation.deinit();
             if (incomplete_equation.checkPossibleSolutionSumProd()) {
+                total_calibration_result += incomplete_equation.result;
+            }
+        } else {
+            break;
+        }
+    }
+
+    return total_calibration_result;
+}
+
+pub fn getResultDay07_2(allocator: std.mem.Allocator) !usize {
+    var input_file = try std.fs.cwd().openFile("src/day07/input_day_07.txt", .{ .mode = std.fs.File.OpenMode.read_only });
+    defer input_file.close();
+
+    var buf_reader = std.io.bufferedReader(input_file.reader());
+    const in_stream = buf_reader.reader();
+
+    var line_buf: [80]u8 = undefined;
+
+    var total_calibration_result: usize = 0;
+    while (true) {
+        var maybe_line = try in_stream.readUntilDelimiterOrEof(line_buf[0..], '\n');
+        if (maybe_line) |*line| {
+            var incomplete_equation = try parseLine(allocator, line);
+            defer incomplete_equation.deinit();
+            if (incomplete_equation.checkPossibleSolutionSumProdConcat()) {
                 total_calibration_result += incomplete_equation.result;
             }
         } else {
