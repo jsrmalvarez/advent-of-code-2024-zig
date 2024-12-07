@@ -26,16 +26,16 @@ const IncompleteEquation = struct {
 
     const Operation = enum { sum, product };
 
-    pub fn checkPossibleSolution(self: IncompleteEquation) bool {
+    pub fn checkPossibleSolutionSumProd(self: IncompleteEquation) bool {
         const first = self.operands.items[0];
         const second = self.operands.items[1];
         const tail = self.operands.items[2..];
-        const sum_check = checkPossibleSolutionRec(self.result, first, second, Operation.sum, tail);
-        const prod_check = checkPossibleSolutionRec(self.result, first, second, Operation.product, tail);
+        const sum_check = checkPossibleSolutionSumProdRec(self.result, first, second, Operation.sum, tail);
+        const prod_check = checkPossibleSolutionSumProdRec(self.result, first, second, Operation.product, tail);
         return sum_check or prod_check;
     }
 
-    fn checkPossibleSolutionRec(equationResult: u64, first: u64, second: u64, operation: Operation, tail: []u64) bool {
+    fn checkPossibleSolutionSumProdRec(equationResult: u64, first: u64, second: u64, operation: Operation, tail: []u64) bool {
         const result = switch (operation) {
             Operation.sum => first + second,
             Operation.product => first * second,
@@ -44,8 +44,8 @@ const IncompleteEquation = struct {
         if (tail.len == 0) {
             return equationResult == result;
         } else {
-            const sum_check = checkPossibleSolutionRec(equationResult, result, tail[0], Operation.sum, tail[1..]);
-            const prod_check = checkPossibleSolutionRec(equationResult, result, tail[0], Operation.product, tail[1..]);
+            const sum_check = checkPossibleSolutionSumProdRec(equationResult, result, tail[0], Operation.sum, tail[1..]);
+            const prod_check = checkPossibleSolutionSumProdRec(equationResult, result, tail[0], Operation.product, tail[1..]);
             return sum_check or prod_check;
         }
     }
@@ -57,7 +57,7 @@ test "Test 1" {
 
     try ie.addOperand(10);
     try ie.addOperand(19);
-    try std.testing.expect(ie.checkPossibleSolution() == true);
+    try std.testing.expect(ie.checkPossibleSolutionSumProd() == true);
 }
 
 test "Test 2" {
@@ -67,7 +67,7 @@ test "Test 2" {
     try ie.addOperand(81);
     try ie.addOperand(40);
     try ie.addOperand(27);
-    try std.testing.expect(ie.checkPossibleSolution() == true);
+    try std.testing.expect(ie.checkPossibleSolutionSumProd() == true);
 }
 
 test "Test 3" {
@@ -78,7 +78,7 @@ test "Test 3" {
     try ie.addOperand(6);
     try ie.addOperand(16);
     try ie.addOperand(20);
-    try std.testing.expect(ie.checkPossibleSolution() == true);
+    try std.testing.expect(ie.checkPossibleSolutionSumProd() == true);
 }
 
 test "Test 4" {
@@ -87,7 +87,7 @@ test "Test 4" {
 
     try ie.addOperand(17);
     try ie.addOperand(5);
-    try std.testing.expect(ie.checkPossibleSolution() == false);
+    try std.testing.expect(ie.checkPossibleSolutionSumProd() == false);
 }
 
 test "Test 5" {
@@ -96,7 +96,7 @@ test "Test 5" {
 
     try ie.addOperand(15);
     try ie.addOperand(6);
-    try std.testing.expect(ie.checkPossibleSolution() == false);
+    try std.testing.expect(ie.checkPossibleSolutionSumProd() == false);
 }
 
 test "Test 6" {
@@ -108,7 +108,7 @@ test "Test 6" {
     try ie.addOperand(6);
     try ie.addOperand(15);
 
-    try std.testing.expect(ie.checkPossibleSolution() == false);
+    try std.testing.expect(ie.checkPossibleSolutionSumProd() == false);
 }
 
 test "Test 7" {
@@ -119,7 +119,7 @@ test "Test 7" {
     try ie.addOperand(8);
     try ie.addOperand(14);
 
-    try std.testing.expect(ie.checkPossibleSolution() == false);
+    try std.testing.expect(ie.checkPossibleSolutionSumProd() == false);
 }
 
 test "Test 8" {
@@ -130,7 +130,7 @@ test "Test 8" {
     try ie.addOperand(7);
     try ie.addOperand(18);
     try ie.addOperand(13);
-    try std.testing.expect(ie.checkPossibleSolution() == false);
+    try std.testing.expect(ie.checkPossibleSolutionSumProd() == false);
 }
 
 pub fn parseLine(allocator: std.mem.Allocator, line: *[]u8) !IncompleteEquation {
@@ -173,7 +173,7 @@ pub fn getResultDay07_1(allocator: std.mem.Allocator) !usize {
         if (maybe_line) |*line| {
             var incomplete_equation = try parseLine(allocator, line);
             defer incomplete_equation.deinit();
-            if (incomplete_equation.checkPossibleSolution()) {
+            if (incomplete_equation.checkPossibleSolutionSumProd()) {
                 total_calibration_result += incomplete_equation.result;
             }
         } else {
