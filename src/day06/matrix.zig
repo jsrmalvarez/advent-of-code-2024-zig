@@ -31,11 +31,36 @@ pub fn Matrix(comptime T: type) type {
 
         /// Release all allocated memory.
         pub fn deinit(self: Self) void {
+            for (0..self.num_rows) |n| {
+                self.rows.items[n].deinit();
+            }
             self.rows.deinit();
         }
 
-        pub fn at(self: Self, n: usize, k: usize) T {
+        pub fn at(self: Self, n: usize, k: usize) !T {
+            if (n >= self.rows.items.len) {
+                return error.IndexOutOfBounds;
+            }
+            if (k >= self.rows.items[n].items.len) {
+                return error.IndexOutOfBounds;
+            }
             return self.rows.items[n].items[k];
+        }
+
+        pub fn set(self: Self, value: T, n: usize, k: usize) void {
+            self.rows.items[n].items[k] = value;
+        }
+
+        pub fn find(self: Self, value: T) ?[2]usize {
+            for (0..self.num_rows) |n| {
+                for (0..self.num_cols) |k| {
+                    if (self.rows.items[n].items[k] == value) {
+                        return .{ n, k };
+                    }
+                }
+            }
+
+            return null;
         }
     };
 }
