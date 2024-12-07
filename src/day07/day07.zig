@@ -49,6 +49,38 @@ const IncompleteEquation = struct {
             return sum_check or prod_check;
         }
     }
+
+    const OperationSumProdConcat = enum { sum, product, concat };
+
+    pub fn checkPossibleSolutionSumProdConcat(self: IncompleteEquation) bool {
+        const first = self.operands.items[0];
+        const second = self.operands.items[1];
+        const tail = self.operands.items[2..];
+        const sum_check = checkPossibleSolutionSumProdConcatRec(self.result, first, second, OperationSumProdConcat.sum, tail);
+        const prod_check = checkPossibleSolutionSumProdConcatRec(self.result, first, second, OperationSumProdConcat.product, tail);
+        const concat_check = checkPossibleSolutionSumProdConcatRec(self.result, first, second, OperationSumProdConcat.concat, tail);
+        return sum_check or prod_check or concat_check;
+    }
+
+    fn checkPossibleSolutionSumProdConcatRec(equationResult: u64, first: u64, second: u64, operation: OperationSumProdConcat, tail: []u64) bool {
+        const result = switch (operation) {
+            OperationSumProdConcat.sum => first + second,
+            OperationSumProdConcat.product => first * second,
+            OperationSumProdConcat.concat => blk: {
+                const multiplier = std.math.pow(u64, 10, (std.math.log10_int(second) + 1));
+                break :blk multiplier * first + second;
+            },
+        };
+
+        if (tail.len == 0) {
+            return equationResult == result;
+        } else {
+            const sum_check = checkPossibleSolutionSumProdConcatRec(equationResult, result, tail[0], OperationSumProdConcat.sum, tail[1..]);
+            const prod_check = checkPossibleSolutionSumProdConcatRec(equationResult, result, tail[0], OperationSumProdConcat.product, tail[1..]);
+            const concat_check = checkPossibleSolutionSumProdConcatRec(equationResult, result, tail[0], OperationSumProdConcat.concat, tail[1..]);
+            return sum_check or prod_check or concat_check;
+        }
+    }
 };
 
 test "Test 1" {

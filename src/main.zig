@@ -39,3 +39,9 @@ test "Day 7 - 1" {
     const total_calibration_result = try day07.getResultDay07_1(std.testing.allocator);
     try std.testing.expectEqual(total_calibration_result, 850435817339);
 }
+
+test "Day 7 - 2" {
+    const day07 = @import("day07/day07.zig");
+    const total_calibration_result = try day07.getResultDay07_2(std.testing.allocator);
+    try std.testing.expectEqual(total_calibration_result, 104824810233437);
+}
