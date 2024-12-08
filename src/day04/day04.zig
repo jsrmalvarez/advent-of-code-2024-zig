@@ -1,5 +1,5 @@
 const std = @import("std");
-const matrix = @import("matrix.zig");
+const matrix = @import("../utils/matrix.zig");
 
 pub const ParseError = error{
     BadFormat,

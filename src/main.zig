@@ -45,3 +45,9 @@ test "Day 7 - 2" {
     const total_calibration_result = try day07.getResultDay07_2(std.testing.allocator);
     try std.testing.expectEqual(total_calibration_result, 104824810233437);
 }
+
+test "Day 8 - 1" {
+    const day08 = @import("day08/day08.zig");
+    const total_unique_locations_within_bounds = try day08.getResultDay08_1(std.testing.allocator);
+    try std.testing.expectEqual(total_unique_locations_within_bounds, 42);
+}
