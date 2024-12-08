@@ -1,5 +1,4 @@
 const std = @import("std");
-const matrix = @import("../utils/matrix.zig");
 
 const Antenna = struct {
     frequency: u8,
@@ -120,12 +119,40 @@ const Antinode = struct {
 };
 
 const AntinodeContext = struct {
-    pub fn hash(self: AntinodeContext, location: Antinode) u64 {
+    pub fn hash(self: AntinodeContext, antinode: Antinode) u64 {
+        _ = self;
+        return antinode.hash();
+    }
+
+    pub fn eql(self: AntinodeContext, first: Antinode, second: Antinode) bool {
+        _ = self;
+        return first.eql(second);
+    }
+};
+
+const Location = struct {
+    x: usize,
+    y: usize,
+
+    pub fn hash(self: Location) u64 {
+        const x = @as(u64, self.x);
+        const y = @as(u64, self.y);
+        const hash_calculation = ((x & 0x00000000FFFFFFFF) << 32) | (y & 0x00000000FFFFFFFF);
+        return hash_calculation;
+    }
+
+    pub fn eql(self: Location, other: Location) bool {
+        return self.hash() == other.hash();
+    }
+};
+
+const LocationContext = struct {
+    pub fn hash(self: LocationContext, location: Location) u64 {
         _ = self;
         return location.hash();
     }
 
-    pub fn eql(self: AntinodeContext, first: Antinode, second: Antinode) bool {
+    pub fn eql(self: LocationContext, first: Location, second: Location) bool {
         _ = self;
         return first.eql(second);
     }
@@ -290,7 +317,104 @@ test "get antinodes" {
     }
 }
 
+fn loadDataInto(in_stream: anytype, list: *std.ArrayList(u8)) ![2]usize {
+    var line_buf: [256]u8 = undefined;
+    var num_rows: usize = 0;
+    var num_cols: usize = 0;
+
+    while (true) {
+        const maybe_line = try in_stream.readUntilDelimiterOrEof(line_buf[0..], '\n');
+        if (maybe_line) |line| {
+            num_rows += 1;
+            var this_line_cols: usize = 0;
+            for (line) |c| {
+                try list.append(c);
+                this_line_cols += 1;
+            }
+
+            if (num_cols == 0) {
+                num_cols = this_line_cols;
+            } else {
+                if (this_line_cols != num_cols) {
+                    return error.BadFormat;
+                }
+            }
+        } else {
+            break;
+        }
+    }
+
+    return .{ num_rows, num_cols };
+}
+
+pub fn readFileInto(file_name: []const u8, list: *std.ArrayList(u8)) ![2]usize {
+    var input_file = try std.fs.cwd().openFile(file_name, .{ .mode = std.fs.File.OpenMode.read_only });
+    defer input_file.close();
+
+    var buf_reader = std.io.bufferedReader(input_file.reader());
+    const in_stream = buf_reader.reader();
+
+    return try loadDataInto(in_stream, list);
+}
+
 pub fn getResultDay08_1(allocator: std.mem.Allocator) !usize {
-    _ = allocator;
-    return 42;
+    const matrix = @import("../utils/matrix.zig");
+    var list = std.ArrayList(u8).init(allocator);
+    defer list.deinit();
+
+    //const data = "......#....#...#....0.......#0....#...#....0........0....#...#....A........#........#......#............A............A............#...........#.";
+    //const mat: matrix.Matrix(u8) = try matrix.Matrix(u8).init(std.testing.allocator, 12, 12, data);
+
+    const matrix_size = try readFileInto("src/day08/input_day_08.txt", &list);
+    const data = list.items;
+    const mat: matrix.Matrix(u8) = try matrix.Matrix(u8).init(allocator, matrix_size[0], matrix_size[1], data);
+    defer mat.deinit();
+
+    var antennas = std.ArrayList(Antenna).init(allocator);
+    defer antennas.deinit();
+
+    // Get antennas
+    for (0..mat.num_rows) |n| {
+        for (0..mat.num_rows) |k| {
+            const c = try mat.at(n, k);
+            if (std.ascii.isAlphanumeric(c)) {
+                const antenna = Antenna{
+                    .frequency = c,
+                    .x = n,
+                    .y = k,
+                };
+                try antennas.append(antenna);
+            }
+        }
+    }
+
+    // Get antenna pairs
+    var pairs = std.HashMap(AntennaPair, u0, AntennaPairContext, 1).init(allocator);
+    defer pairs.deinit();
+
+    for (antennas.items) |ai| {
+        for (antennas.items) |aj| {
+            const pair: ?AntennaPair = AntennaPair.create(ai, aj) catch null;
+            if (pair) |p| {
+                try pairs.put(p, 0);
+            }
+        }
+    }
+
+    var unique_locations_with_antinodes_within_bounds = std.HashMap(Location, u0, LocationContext, 1).init(allocator);
+    defer unique_locations_with_antinodes_within_bounds.deinit();
+    var pair_iterator = pairs.iterator();
+    while (pair_iterator.next()) |e| {
+        const p = e.key_ptr;
+        const maybe_antinodes = p.getAntinodes();
+        for (maybe_antinodes) |maybe_antinode| {
+            if (maybe_antinode) |antinode| {
+                if (antinode.x < mat.num_rows and antinode.y < mat.num_cols) {
+                    try unique_locations_with_antinodes_within_bounds.put(Location{ .x = antinode.x, .y = antinode.y }, 0);
+                }
+            }
+        }
+    }
+
+    return unique_locations_with_antinodes_within_bounds.count();
 }
