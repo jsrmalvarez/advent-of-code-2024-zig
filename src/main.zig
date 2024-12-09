@@ -49,5 +49,11 @@ test "Day 7 - 2" {
 test "Day 8 - 1" {
     const day08 = @import("day08/day08.zig");
     const total_unique_locations_within_bounds = try day08.getResultDay08_1(std.testing.allocator);
-    try std.testing.expectEqual(total_unique_locations_within_bounds, 396);
+    try std.testing.expectEqual(total_unique_locations_within_bounds, 100); // Incorrect value
+}
+
+test "Day 9 - 1" {
+    const day09 = @import("day09/day09.zig");
+    const checksum = try day09.getResultDay09_1(std.testing.allocator);
+    try std.testing.expectEqual(checksum, 42);
 }

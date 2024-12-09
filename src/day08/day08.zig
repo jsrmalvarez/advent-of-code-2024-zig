@@ -42,15 +42,106 @@ const AntennaPair = struct {
         return self.hash() == other.hash();
     }
 
-    pub fn getVector(self: AntennaPair) [2]isize {
-        const first_x: isize = @intCast(self.first.x);
-        const first_y: isize = @intCast(self.first.y);
-        const second_x: isize = @intCast(self.second.x);
-        const second_y: isize = @intCast(self.second.y);
-        return .{ (first_x - second_x), (first_y - second_y) };
+    pub fn getAntinodes(self: AntennaPair) [2]?Antinode {
+        const x1 = self.first.x;
+        const y1 = self.first.y;
+        const x2 = self.second.x;
+        const y2 = self.second.y;
+
+        if (x2 >= x1 and y2 >= y1) {
+            const dist_x = x2 - x1;
+            const dist_y = y2 - y1;
+
+            const antinode1: ?Antinode = if (x1 >= dist_x and y1 >= dist_y)
+                Antinode{
+                    .frequency = self.first.frequency,
+                    .x = x1 - dist_x,
+                    .y = y1 - dist_y,
+                }
+            else
+                null;
+
+            const antinode2: ?Antinode =
+                Antinode{
+                .frequency = self.first.frequency,
+                .x = x2 + dist_x,
+                .y = y2 + dist_y,
+            };
+
+            return .{ antinode1, antinode2 };
+        } else if (x2 < x1 and y2 >= y1) {
+            const dist_x = x1 - x2;
+            const dist_y = y2 - y1;
+
+            const antinode1: ?Antinode = if (y1 >= dist_y)
+                Antinode{
+                    .frequency = self.first.frequency,
+                    .x = x1 + dist_x,
+                    .y = y1 - dist_y,
+                }
+            else
+                null;
+
+            const antinode2: ?Antinode = if (x2 >= dist_x)
+                Antinode{
+                    .frequency = self.first.frequency,
+                    .x = x2 - dist_x,
+                    .y = y2 + dist_y,
+                }
+            else
+                null;
+
+            return .{ antinode1, antinode2 };
+        } else if (x2 < x1 and y2 < y1) {
+            const dist_x = x1 - x2;
+            const dist_y = y1 - y2;
+
+            const antinode1: ?Antinode =
+                Antinode{
+                .frequency = self.first.frequency,
+                .x = x1 + dist_x,
+                .y = y1 + dist_y,
+            };
+
+            const antinode2: ?Antinode = if (x2 >= dist_x and y2 >= dist_y)
+                Antinode{
+                    .frequency = self.first.frequency,
+                    .x = x2 - dist_x,
+                    .y = y2 - dist_y,
+                }
+            else
+                null;
+
+            return .{ antinode1, antinode2 };
+        } else if (x2 >= x1 and y2 < y1) {
+            const dist_x = x2 - x1;
+            const dist_y = y1 - y2;
+
+            const antinode1: ?Antinode = if (x1 >= dist_x)
+                Antinode{
+                    .frequency = self.first.frequency,
+                    .x = x1 - dist_x,
+                    .y = y1 + dist_y,
+                }
+            else
+                null;
+
+            const antinode2: ?Antinode = if (y2 >= dist_y)
+                Antinode{
+                    .frequency = self.first.frequency,
+                    .x = x2 + dist_x,
+                    .y = y2 - dist_y,
+                }
+            else
+                null;
+
+            return .{ antinode1, antinode2 };
+        } else {
+            unreachable;
+        }
     }
 
-    pub fn getAntinodes(self: AntennaPair) [2]?Antinode {
+    pub fn getAntinodes2(self: AntennaPair) [2]?Antinode {
         const vector = self.getVector();
         const vector_x = vector[0];
         const vector_y = vector[1];
@@ -60,11 +151,11 @@ const AntennaPair = struct {
         const second_x: isize = @intCast(self.second.x);
         const second_y: isize = @intCast(self.second.y);
 
-        const antinode1_x = first_x + vector_x;
-        const antinode1_y = first_y + vector_y;
+        const antinode1_x = first_x - vector_x;
+        const antinode1_y = first_y - vector_y;
 
-        const antinode2_x = second_x - vector_x;
-        const antinode2_y = second_y - vector_y;
+        const antinode2_x = second_x + vector_x;
+        const antinode2_y = second_y + vector_y;
 
         const antinode1: ?Antinode = if (antinode1_x >= 0 and antinode1_y >= 0)
             Antinode{
@@ -363,20 +454,20 @@ pub fn getResultDay08_1(allocator: std.mem.Allocator) !usize {
     defer list.deinit();
 
     //const data = "......#....#...#....0.......#0....#...#....0........0....#...#....A........#........#......#............A............A............#...........#.";
-    //const mat: matrix.Matrix(u8) = try matrix.Matrix(u8).init(std.testing.allocator, 12, 12, data);
+    //const map: matrix.Matrix(u8) = try matrix.Matrix(u8).init(std.testing.allocator, 12, 12, data);
 
     const matrix_size = try readFileInto("src/day08/input_day_08.txt", &list);
     const data = list.items;
-    const mat: matrix.Matrix(u8) = try matrix.Matrix(u8).init(allocator, matrix_size[0], matrix_size[1], data);
-    defer mat.deinit();
+    const map: matrix.Matrix(u8) = try matrix.Matrix(u8).init(allocator, matrix_size[0], matrix_size[1], data);
+    defer map.deinit();
 
     var antennas = std.ArrayList(Antenna).init(allocator);
     defer antennas.deinit();
 
     // Get antennas
-    for (0..mat.num_rows) |n| {
-        for (0..mat.num_rows) |k| {
-            const c = try mat.at(n, k);
+    for (0..map.num_rows) |n| {
+        for (0..map.num_cols) |k| {
+            const c = try map.at(n, k);
             if (std.ascii.isAlphanumeric(c)) {
                 const antenna = Antenna{
                     .frequency = c,
@@ -409,7 +500,7 @@ pub fn getResultDay08_1(allocator: std.mem.Allocator) !usize {
         const maybe_antinodes = p.getAntinodes();
         for (maybe_antinodes) |maybe_antinode| {
             if (maybe_antinode) |antinode| {
-                if (antinode.x < mat.num_rows and antinode.y < mat.num_cols) {
+                if (antinode.x < map.num_rows and antinode.y < map.num_cols) {
                     try unique_locations_with_antinodes_within_bounds.put(Location{ .x = antinode.x, .y = antinode.y }, 0);
                 }
             }
